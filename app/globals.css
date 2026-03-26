@@ -1,26 +1,66 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Background */
+  --eden-bg: #FAF8F5;
+  --eden-bg-subtle: #F5F0EB;
+  
+  /* Surface (Cards) */
+  --eden-surface: #FFFFFF;
+  --eden-surface-hover: #FAFAF9;
+  
+  /* Borders */
+  --eden-border: #E7E5E4;
+  --eden-border-strong: #D6D3D1;
+  
+  /* Text */
+  --eden-text: #1C1917;
+  --eden-text-secondary: #57534E;
+  --eden-text-muted: #A8A29E;
+  
+  /* Accent - Green (Growth/Progress) */
+  --eden-accent: #16A34A;
+  --eden-accent-soft: #DCFCE7;
+  
+  /* Focus - Amber */
+  --eden-focus: #F59E0B;
+  --eden-focus-soft: #FEF3C7;
+  
+  /* Status */
+  --eden-success: #16A34A;
+  --eden-warning: #EAB308;
+  --eden-error: #DC2626;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-background: var(--eden-bg);
+  --color-foreground: var(--eden-text);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  
+  /* Eden Colors */
+  --color-eden-bg: var(--eden-bg);
+  --color-eden-bg-subtle: var(--eden-bg-subtle);
+  --color-eden-surface: var(--eden-surface);
+  --color-eden-surface-hover: var(--eden-surface-hover);
+  --color-eden-border: var(--eden-border);
+  --color-eden-border-strong: var(--eden-border-strong);
+  --color-eden-text: var(--eden-text);
+  --color-eden-text-secondary: var(--eden-text-secondary);
+  --color-eden-text-muted: var(--eden-text-muted);
+  --color-eden-accent: var(--eden-accent);
+  --color-eden-accent-soft: var(--eden-accent-soft);
+  --color-eden-focus: var(--eden-focus);
+  --color-eden-focus-soft: var(--eden-focus-soft);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--eden-bg);
+  color: var(--eden-text);
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+}
+
+/* Smooth transitions for interactive elements */
+* {
+  @apply transition-colors duration-150;
 }
