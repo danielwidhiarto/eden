@@ -1,0 +1,79 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper function to check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Helper function to check if user owns the document
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    // Tasks collection
+    match /tasks/{taskId} {
+      allow read: if isOwner(resource.data.userId);
+      allow create: if isAuthenticated() && request.auth.uid == request.resource.data.userId;
+      allow update, delete: if isOwner(resource.data.userId);
+    }
+    
+    // Notes collection
+    match /notes/{noteId} {
+      allow read: if isOwner(resource.data.userId);
+      allow create: if isAuthenticated() && request.auth.uid == request.resource.data.userId;
+      allow update, delete: if isOwner(resource.data.userId);
+    }
+    
+    // KPIs collection - document ID format: {userId}_{year}
+    match /kpis/{kpiDocId} {
+      // Allow read if doc exists and user owns it, OR if doc ID starts with user's UID
+      allow read: if isAuthenticated() && (
+        (resource != null && resource.data.userId == request.auth.uid) ||
+        kpiDocId.matches(request.auth.uid + '_.*')
+      );
+      allow create: if isAuthenticated() && request.auth.uid == request.resource.data.userId;
+      allow update: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid &&
+        request.resource.data.userId == request.auth.uid
+      );
+      allow delete: if isOwner(resource.data.userId);
+    }
+    
+    // Weekly Goals collection - document ID format: {userId}_{weekId}
+    match /weeklyGoals/{goalDocId} {
+      allow read: if isAuthenticated() && (
+        (resource != null && resource.data.userId == request.auth.uid) ||
+        goalDocId.matches(request.auth.uid + '_.*')
+      );
+      allow create: if isAuthenticated() && request.auth.uid == request.resource.data.userId;
+      allow update: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid &&
+        request.resource.data.userId == request.auth.uid
+      );
+      allow delete: if isOwner(resource.data.userId);
+    }
+    
+    // Day States collection
+    match /dayStates/{dayStateId} {
+      allow read: if isOwner(resource.data.userId);
+      allow create: if isAuthenticated() && request.auth.uid == request.resource.data.userId;
+      allow update: if isOwner(resource.data.userId);
+      allow delete: if isOwner(resource.data.userId);
+    }
+    
+    // Goals collection (for future use)
+    match /goals/{goalId} {
+      allow read: if isOwner(resource.data.userId);
+      allow create: if isAuthenticated() && request.auth.uid == request.resource.data.userId;
+      allow update, delete: if isOwner(resource.data.userId);
+    }
+    
+    // Users collection (for user profiles/settings)
+    match /users/{userId} {
+      allow read, write: if isAuthenticated() && request.auth.uid == userId;
+    }
+  }
+}
