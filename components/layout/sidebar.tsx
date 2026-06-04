@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, CheckSquare, BarChart3, FileText, Leaf, LogOut } from "lucide-react";
+import { Home, CheckSquare, BarChart3, Leaf, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 import { useAuth } from "@/lib/hooks/use-auth";
 
@@ -10,7 +10,6 @@ const navigation = [
   { name: "Home", href: "/dashboard", icon: Home },
   { name: "Tasks", href: "/tasks", icon: CheckSquare },
   { name: "KPIs", href: "/kpis", icon: BarChart3 },
-  { name: "Notes", href: "/notes", icon: FileText },
 ];
 
 export function Sidebar() {

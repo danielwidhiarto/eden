@@ -39,18 +39,6 @@ export interface Goal {
   updatedAt: Timestamp;
 }
 
-// Note types
-export interface Note {
-  id: string;
-  userId: string;
-  content: string;
-  isPinned: boolean;
-  linkedTaskId?: string;
-  linkedGoalId?: string;
-  createdAt: Timestamp;
-  updatedAt: Timestamp;
-}
-
 // KPI types
 export type KPIType = "number" | "percentage" | "boolean" | "score";
 

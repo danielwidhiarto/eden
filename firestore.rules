@@ -20,13 +20,6 @@ service cloud.firestore {
       allow update, delete: if isOwner(resource.data.userId);
     }
     
-    // Notes collection
-    match /notes/{noteId} {
-      allow read: if isOwner(resource.data.userId);
-      allow create: if isAuthenticated() && request.auth.uid == request.resource.data.userId;
-      allow update, delete: if isOwner(resource.data.userId);
-    }
-    
     // KPIs collection - document ID format: {userId}_{year}
     match /kpis/{kpiDocId} {
       // Allow read if doc exists and user owns it, OR if doc ID starts with user's UID
