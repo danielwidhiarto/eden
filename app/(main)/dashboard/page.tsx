@@ -1,6 +1,5 @@
 import {
   DateHeader,
-  StateOfDay,
   TodayFocus,
   MetricsRow,
   KanbanBoard,
@@ -10,7 +9,6 @@ export default function DashboardPage() {
   return (
     <div>
       <DateHeader />
-      <StateOfDay />
       <TodayFocus />
       <MetricsRow />
       <KanbanBoard />

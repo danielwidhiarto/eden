@@ -81,17 +81,6 @@ export interface KPI {
   updatedAt: Timestamp;
 }
 
-// State of the Day
-export interface DayState {
-  id: string;
-  userId: string;
-  date: string; // YYYY-MM-DD format
-  intention?: string;
-  constraints?: string;
-  createdAt: Timestamp;
-  updatedAt: Timestamp;
-}
-
 // User types
 export interface UserSettings {
   focusHoursStart: number;
