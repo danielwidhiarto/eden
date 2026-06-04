@@ -4,7 +4,6 @@ import {
   TodayFocus,
   MetricsRow,
   KanbanBoard,
-  WeeklyGoal,
 } from "@/components/dashboard";
 
 export default function DashboardPage() {
@@ -15,7 +14,6 @@ export default function DashboardPage() {
       <TodayFocus />
       <MetricsRow />
       <KanbanBoard />
-      <WeeklyGoal />
     </div>
   );
 }
