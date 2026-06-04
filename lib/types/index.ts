@@ -1,7 +1,7 @@
 import type { Timestamp } from "firebase/firestore";
 
 // Task types
-export type TaskStatus = "todo" | "doing" | "done";
+export type TaskStatus = "backlog" | "todo" | "doing" | "done" | "archived";
 export type TaskPriority = "low" | "medium" | "high";
 
 export interface Task {
@@ -12,12 +12,16 @@ export interface Task {
   status: TaskStatus;
   priority: TaskPriority;
   dueDate?: Timestamp;
+  // Optional time of day in "HH:mm" 24h format. Combined with dueDate
+  // for accurate overdue semantics. Omit for date-only tasks.
+  dueTime?: string;
   scheduledDate?: Timestamp;
   goalId?: string;
   isFocus: boolean;
   createdAt: Timestamp;
   updatedAt: Timestamp;
   completedAt?: Timestamp;
+  archivedAt?: Timestamp;
 }
 
 // Goal types

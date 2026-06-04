@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Timestamp } from "firebase/firestore";
 import {
   DndContext,
   DragOverlay,
@@ -11,7 +12,6 @@ import {
   useSensors,
   type DragStartEvent,
   type DragEndEvent,
-  type DragOverEvent,
 } from "@dnd-kit/core";
 import {
   SortableContext,
@@ -20,16 +20,33 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Plus, Flame, GripVertical, Loader2, Trash2, Pencil, X, Check } from "lucide-react";
-import { Card, CardContent, Button, Badge, Input } from "@/components/ui";
+import {
+  Plus,
+  Flame,
+  GripVertical,
+  Trash2,
+  Pencil,
+  X,
+  Check,
+  Calendar,
+  AlertCircle,
+} from "lucide-react";
+import { Card, CardContent, Button, Badge, Input, LoadingState } from "@/components/ui";
 import { useTasks } from "@/lib/hooks";
-import type { TaskStatus, Task } from "@/lib/types";
+import type { TaskStatus, Task, TaskPriority } from "@/lib/types";
 import { cn } from "@/lib/utils/cn";
+import { formatDueInfo } from "@/lib/utils/task-due";
+
+const PRIORITY_DOT: Record<TaskPriority, string> = {
+  high: "bg-red-500",
+  medium: "bg-amber-500",
+  low: "bg-eden-text-muted",
+};
 
 interface SortableTaskProps {
   task: Task;
   onSetFocus: (taskId: string) => void;
-  onDelete: (taskId: string) => void;
+  onDelete: (task: Task) => void;
   onEdit: (taskId: string, title: string) => void;
 }
 
@@ -63,6 +80,8 @@ function SortableTask({ task, onSetFocus, onDelete, onEdit }: SortableTaskProps)
     setIsEditing(false);
   };
 
+  const dueInfo = formatDueInfo(task);
+
   return (
     <div
       ref={setNodeRef}
@@ -77,6 +96,7 @@ function SortableTask({ task, onSetFocus, onDelete, onEdit }: SortableTaskProps)
           {...attributes}
           {...listeners}
           className="cursor-grab active:cursor-grabbing mt-0.5 flex-shrink-0 touch-none"
+          aria-label="Drag to reorder"
         >
           <GripVertical className="w-4 h-4 text-eden-text-muted opacity-50 group-hover:opacity-100 transition-opacity" />
         </button>
@@ -101,15 +121,40 @@ function SortableTask({ task, onSetFocus, onDelete, onEdit }: SortableTaskProps)
               </button>
             </div>
           ) : (
-            <p className="text-sm text-eden-text">{task.title}</p>
+            <div className="flex items-start gap-1.5">
+              <span
+                className={cn("w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0", PRIORITY_DOT[task.priority])}
+                aria-label={`${task.priority} priority`}
+              />
+              <p className="text-sm text-eden-text break-words">{task.title}</p>
+            </div>
           )}
+
+          {dueInfo && !isEditing && (
+            <div
+              className={cn(
+                "flex items-center gap-1 mt-1.5 text-xs",
+                dueInfo.tone === "overdue" && "text-red-600 font-medium",
+                dueInfo.tone === "today" && "text-amber-600",
+                dueInfo.tone === "muted" && "text-eden-text-muted"
+              )}
+            >
+              {dueInfo.tone === "overdue" ? (
+                <AlertCircle className="w-3 h-3" />
+              ) : (
+                <Calendar className="w-3 h-3" />
+              )}
+              <span>{dueInfo.label}</span>
+            </div>
+          )}
+
           <div className="flex items-center gap-2 mt-2">
             {task.isFocus ? (
               <Badge variant="focus">
                 <Flame className="w-3 h-3 mr-1" />
                 Focus
               </Badge>
-            ) : task.status !== "done" && (
+            ) : task.status !== "done" && task.status !== "archived" && (
               <button
                 onClick={() => onSetFocus(task.id)}
                 className="text-xs text-eden-text-muted hover:text-eden-focus transition-colors"
@@ -117,17 +162,18 @@ function SortableTask({ task, onSetFocus, onDelete, onEdit }: SortableTaskProps)
                 Set focus
               </button>
             )}
-            {/* Edit & Delete buttons */}
             <div className="ml-auto flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
               <button
                 onClick={() => setIsEditing(true)}
                 className="p-1 text-eden-text-muted hover:text-eden-text hover:bg-eden-bg-subtle rounded"
+                aria-label="Edit task"
               >
                 <Pencil className="w-3 h-3" />
               </button>
               <button
-                onClick={() => onDelete(task.id)}
+                onClick={() => onDelete(task)}
                 className="p-1 text-eden-text-muted hover:text-red-500 hover:bg-red-50 rounded"
+                aria-label="Delete task"
               >
                 <Trash2 className="w-3 h-3" />
               </button>
@@ -163,7 +209,7 @@ interface KanbanColumnProps {
   title: string;
   tasks: Task[];
   onSetFocus: (taskId: string) => void;
-  onDelete: (taskId: string) => void;
+  onDelete: (task: Task) => void;
   onEdit: (taskId: string, title: string) => void;
 }
 
@@ -188,10 +234,10 @@ function KanbanColumn({ id, title, tasks, onSetFocus, onDelete, onEdit }: Kanban
       >
         <SortableContext items={tasks.map(t => t.id)} strategy={verticalListSortingStrategy}>
           {tasks.map((task) => (
-            <SortableTask 
-              key={task.id} 
-              task={task} 
-              onSetFocus={onSetFocus} 
+            <SortableTask
+              key={task.id}
+              task={task}
+              onSetFocus={onSetFocus}
               onDelete={onDelete}
               onEdit={onEdit}
             />
@@ -208,7 +254,17 @@ function KanbanColumn({ id, title, tasks, onSetFocus, onDelete, onEdit }: Kanban
 }
 
 export function KanbanBoard() {
-  const { tasks, todoTasks, doingTasks, doneTasks, loading, addTask, setFocusTask, updateTask, deleteTask } = useTasks();
+  const {
+    loading,
+    backlogTasks,
+    todoTasks,
+    doingTasks,
+    doneTasks,
+    addTask,
+    setFocusTask,
+    updateTask,
+    deleteTask,
+  } = useTasks();
   const [showAddTask, setShowAddTask] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState("");
   const [activeTask, setActiveTask] = useState<Task | null>(null);
@@ -226,13 +282,15 @@ export function KanbanBoard() {
 
   const handleAddTask = async () => {
     if (!newTaskTitle.trim()) return;
-    await addTask({ title: newTaskTitle.trim(), status: "todo" });
+    await addTask({ title: newTaskTitle.trim(), status: "backlog" });
     setNewTaskTitle("");
     setShowAddTask(false);
   };
 
-  const handleDeleteTask = async (taskId: string) => {
-    await deleteTask(taskId);
+  const handleDeleteTask = (task: Task) => {
+    if (window.confirm(`Delete "${task.title}"?`)) {
+      deleteTask(task.id);
+    }
   };
 
   const handleEditTask = async (taskId: string, title: string) => {
@@ -240,12 +298,10 @@ export function KanbanBoard() {
   };
 
   const handleDragStart = (event: DragStartEvent) => {
-    const task = tasks.find(t => t.id === event.active.id);
+    const task = [...backlogTasks, ...todoTasks, ...doingTasks, ...doneTasks].find(
+      (t) => t.id === event.active.id
+    );
     if (task) setActiveTask(task);
-  };
-
-  const handleDragOver = (event: DragOverEvent) => {
-    // Handle drag over columns for visual feedback
   };
 
   const handleDragEnd = async (event: DragEndEvent) => {
@@ -256,28 +312,27 @@ export function KanbanBoard() {
 
     const activeId = active.id as string;
     const overId = over.id as string;
-
-    // If dropped on same position, do nothing
     if (activeId === overId) return;
 
-    // Determine target status
     let newStatus: TaskStatus | null = null;
-
-    // Check if dropped on a column
-    if (["todo", "doing", "done"].includes(overId)) {
+    if (["backlog", "todo", "doing", "done"].includes(overId)) {
       newStatus = overId as TaskStatus;
     } else {
-      // Dropped on another task - find which column it's in
-      const overTask = tasks.find(t => t.id === overId);
-      if (overTask) {
-        newStatus = overTask.status;
-      }
+      const overTask = [...backlogTasks, ...todoTasks, ...doingTasks, ...doneTasks].find(
+        (t) => t.id === overId
+      );
+      if (overTask) newStatus = overTask.status;
     }
 
     if (newStatus) {
-      const activeTask = tasks.find(t => t.id === activeId);
-      if (activeTask && activeTask.status !== newStatus) {
-        await updateTask(activeId, { status: newStatus });
+      const task = [...backlogTasks, ...todoTasks, ...doingTasks, ...doneTasks].find(
+        (t) => t.id === activeId
+      );
+      if (task && task.status !== newStatus) {
+        await updateTask(activeId, {
+          status: newStatus,
+          completedAt: newStatus === "done" ? Timestamp.now() : undefined,
+        });
       }
     }
   };
@@ -285,17 +340,18 @@ export function KanbanBoard() {
   if (loading) {
     return (
       <Card className="mb-6">
-        <CardContent className="py-12 flex justify-center">
-          <Loader2 className="w-6 h-6 text-eden-text-muted animate-spin" />
+        <CardContent>
+          <LoadingState size="lg" label="Loading tasks..." />
         </CardContent>
       </Card>
     );
   }
 
   const columns: { id: TaskStatus; title: string; tasks: Task[] }[] = [
+    { id: "backlog", title: "Backlog", tasks: backlogTasks },
     { id: "todo", title: "Todo", tasks: todoTasks },
     { id: "doing", title: "Doing", tasks: doingTasks },
-    { id: "done", title: "Done", tasks: doneTasks.slice(0, 5) },
+    { id: "done", title: "Done", tasks: doneTasks },
   ];
 
   return (
@@ -317,7 +373,10 @@ export function KanbanBoard() {
               value={newTaskTitle}
               onChange={(e) => setNewTaskTitle(e.target.value)}
               placeholder="What needs to be done?"
-              onKeyDown={(e) => e.key === "Enter" && handleAddTask()}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleAddTask();
+                if (e.key === "Escape") setShowAddTask(false);
+              }}
               autoFocus
             />
             <Button onClick={handleAddTask} disabled={!newTaskTitle.trim()}>
@@ -333,7 +392,6 @@ export function KanbanBoard() {
           sensors={sensors}
           collisionDetection={closestCorners}
           onDragStart={handleDragStart}
-          onDragOver={handleDragOver}
           onDragEnd={handleDragEnd}
         >
           <div className="flex gap-4 overflow-x-auto pb-2">
