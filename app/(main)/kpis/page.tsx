@@ -8,7 +8,9 @@ import {
   calculateScore, 
   calculateOverallScore, 
   getScoreEmoji,
-  getScoreStatus 
+  getScoreStatus,
+  getScore6Target,
+  formatScoreRule
 } from "@/lib/kpi-config";
 import { Loader2, Save, X } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
@@ -168,7 +170,63 @@ export default function KPIsPage() {
                   <p className="text-xs text-eden-text-muted">
                     Target: <span className="text-eden-text">{config.targetDescription}</span>
                   </p>
+                  <p className="text-xs text-eden-text-muted mt-0.5">
+                    Score 6: <span className="text-eden-text font-medium">{getScore6Target(config)}</span>
+                  </p>
                 </div>
+
+                {/* Scoring Details (expander) */}
+                <details className="group mt-2">
+                  <summary className="text-xs text-eden-text-muted cursor-pointer hover:text-eden-text transition-colors list-none flex items-center gap-1 select-none">
+                    <svg
+                      className="w-3 h-3 transition-transform group-open:rotate-90"
+                      viewBox="0 0 16 16"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden="true"
+                    >
+                      <path d="M6 4l4 4-4 4" />
+                    </svg>
+                    Lihat detail skor 1–6
+                  </summary>
+                  <div className="mt-2 rounded-lg border border-eden-border overflow-hidden">
+                    <table className="w-full text-xs">
+                      <thead className="bg-eden-bg-subtle">
+                        <tr>
+                          <th className="px-2 py-1.5 text-left font-medium text-eden-text-muted w-10">Score</th>
+                          <th className="px-2 py-1.5 text-left font-medium text-eden-text-muted">Range</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {config.scoringRules.map((rule) => {
+                          const isCurrent = rule.score === score;
+                          const isMax = rule.score === 6;
+                          return (
+                            <tr
+                              key={rule.score}
+                              className={
+                                isCurrent
+                                  ? "bg-eden-focus-soft/40"
+                                  : "odd:bg-eden-surface even:bg-eden-bg-subtle/40"
+                              }
+                            >
+                              <td className="px-2 py-1 font-semibold text-eden-text">
+                                {rule.score}
+                                {isCurrent && <span className="ml-1 text-eden-text-muted">●</span>}
+                              </td>
+                              <td className={cn("px-2 py-1", isMax ? "text-eden-text font-medium" : "text-eden-text-secondary")}>
+                                {formatScoreRule(rule, config.unit === "%" ? "%" : undefined)}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </details>
               </CardContent>
             </Card>
           );

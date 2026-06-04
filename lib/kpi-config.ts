@@ -200,3 +200,32 @@ export function getScoreEmoji(score: number): string {
   if (score >= 3) return "🟡";
   return "🔴";
 }
+
+// Format a single scoring rule as a human-readable range
+//   { min: 5.51, max: 6 }   -> "5.51 – 6.00"
+//   { min: 2,   max: 999 } -> "≥ 2"
+//   { min: 100, max: 100 } -> "= 100"
+export function formatScoreRule(
+  rule: { min: number; max: number },
+  unit?: string
+): string {
+  const formatNum = (n: number): string => {
+    if (Number.isInteger(n)) return String(n);
+    return n.toFixed(2).replace(/\.?0+$/, "");
+  };
+  const suffix = unit === "%" ? "%" : "";
+  if (rule.min === rule.max) {
+    return `= ${formatNum(rule.min)}${suffix}`;
+  }
+  if (rule.max === 999) {
+    return `≥ ${formatNum(rule.min)}${suffix}`;
+  }
+  return `${formatNum(rule.min)} – ${formatNum(rule.max)}${suffix}`;
+}
+
+// Get the formatted threshold for the maximum (score 6) range of a KPI
+export function getScore6Target(config: KPIConfig): string {
+  const rule = config.scoringRules.find((r) => r.score === 6);
+  if (!rule) return "—";
+  return formatScoreRule(rule, config.unit === "%" ? "%" : undefined);
+}
